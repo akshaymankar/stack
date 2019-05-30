@@ -102,12 +102,16 @@ createPrunedDependencyGraph :: DotOpts
 createPrunedDependencyGraph dotOpts = withDotConfig dotOpts $ do
   localNames <- view $ buildConfigL.to (Map.keysSet . smwProject . bcSMWanted)
   logDebug "Creating dependency graph"
+  logDebug $ fromString ("locals: " ++ show localNames)
   resultGraph <- createDependencyGraph dotOpts
+  logDebug $ fromString $ show $ dotIncludeBase dotOpts
   let pkgsToPrune = if dotIncludeBase dotOpts
                        then dotPrune dotOpts
                        else Set.insert "base" (dotPrune dotOpts)
       prunedGraph = pruneGraph localNames pkgsToPrune resultGraph
   logDebug "Returning prouned dependency graph"
+  logDebug $ fromString $ ("tobe Pruned" ++ show pkgsToPrune)
+  logDebug $ fromString $ concatMap packageNameString $ Map.keys prunedGraph
   return (localNames, prunedGraph)
 
 -- | Create the dependency graph, the result is a map from a package

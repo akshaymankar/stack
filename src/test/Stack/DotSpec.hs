@@ -15,6 +15,7 @@ import           Stack.Prelude hiding (pkgName)
 import           Test.Hspec
 import           Test.Hspec.QuickCheck (prop)
 import           Test.QuickCheck (forAll,choose,Gen)
+import           Test.QuickCheck.Property (Result(..), succeeded, failed)
 
 import           Stack.Dot
 
@@ -57,6 +58,32 @@ spec = do
       forAll (sublistOf (Set.toList (allPackages resolvedGraph))) $ \toPrune ->
         let pruned = pruneGraph [pkgName "one", pkgName "two"] toPrune resolvedGraph
         in Set.null (allPackages pruned `Set.intersection` Set.fromList toPrune)
+
+    -- prop "dontPrune packages are not pruned" $ do
+    --   let resolvedGraph = runIdentity (resolveDependencies Nothing graph stubLoader)
+    --       allPackages g = Set.map packageNameString (Map.keysSet g `Set.union`  fold (fmap fst g))
+    --   forAll (sublistOf (Set.toList (allPackages resolvedGraph))) $ \toPrune ->
+    --     let pruned = pruneGraph [pkgName "one", pkgName "two"] toPrune resolvedGraph
+    --     in if "one" `elem` allPackages pruned
+    --           then if "two" `elem` allPackages pruned
+    --                   then succeeded
+    --                   else failed {reason = "expected `two` to not be pruned but found " ++ show (allPackages pruned)}
+    --           else failed {reason = "expected `one` to not be pruned but found " ++ show (allPackages pruned)}
+
+    prop "only requested packages are pruned" $ do
+      let resolvedGraph = runIdentity (resolveDependencies Nothing graph stubLoader)
+          allPackages g = Set.map packageNameString (Map.keysSet g `Set.union`  fold (fmap fst g))
+      forAll (sublistOf (Set.toList (allPackages resolvedGraph))) $ \toPrune ->
+        let realToPrune = Set.fromList toPrune `Set.difference` Set.fromList ["one", "two"]
+            pruned = pruneGraph [pkgName "one", pkgName "two"] realToPrune resolvedGraph
+            prunedNames = allPackages pruned
+            allNames = allPackages resolvedGraph
+            toPruneNames = Set.fromList toPrune
+        in if prunedNames `Set.union` realToPrune  == allNames
+              then succeeded
+              else failed {reason = "expected union of " ++ show pruned ++
+                                    "\n and " ++ show realToPrune ++
+                                    "\n to be equal to " ++ show allNames}
 
     prop "pruning removes orhpans" $ do
       let resolvedGraph = runIdentity (resolveDependencies Nothing graph stubLoader)

@@ -74,3 +74,20 @@ main = do
                            ]
     when (stdOut /= expected) $
       error $ unlines [ "Expected:", expected, "Actual:", stdOut ]
+
+  -- stackCheckStdout ["ls", "dependencies", "--tree", "--no-include-base"] $ \stdOut -> do
+  --   let expected = unlines [ "Packages"
+  --                          , "└─┬ files 0.1.0.0"
+  --                          , "  └── mtl 2.2.2"
+  --                          ]
+  --   when (stdOut /= expected) $
+  --     error $ unlines [ "Expected:", expected, "Actual:", stdOut ]
+
+  stackCheckStdout ["-v", "ls", "dependencies", "--no-include-base"] $ \stdOut -> do
+    let expected = unlines [ "Packages"
+                           , "└─┬ files 0.1.0.0"
+                           , "  └── mtl 2.2.2"
+                           ]
+    when (stdOut /= expected) $
+      error $ unlines [ "Expected:", expected, "Actual:", stdOut ]
+
